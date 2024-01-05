@@ -1,4 +1,4 @@
-from recipes.views import TagViewSet, IngredientViewSet, RecipeViewSet
+from recipes.views import TagViewSet, IngredientViewSet, RecipeViewSet, IngredientRecipeViewSet, CustomUserViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -6,15 +6,17 @@ from django.urls import include, path
 from rest_framework import routers
 
 router = routers.DefaultRouter()
-router.register(r'recipes', RecipeViewSet)
-router.register(r'tags', TagViewSet)
+router.register(r'recipes', RecipeViewSet, basename='recipes')
+router.register(r'tags', TagViewSet, basename='tags')
 router.register(r'ingredients', IngredientViewSet)
+router.register(r'ingrecipe', IngredientRecipeViewSet)
+router.register(r'users', CustomUserViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/', include('djoser.urls')),  # Работа с пользователями
-    #path('api/', include('djoser.urls.authtoken')),  # Работа с токенами
+    path('api/auth/', include('djoser.urls.authtoken')),  # Работа с токенами
 ]
 
 if settings.DEBUG:

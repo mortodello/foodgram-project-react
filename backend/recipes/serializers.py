@@ -4,9 +4,9 @@ import base64
 import webcolors
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from djoser.serializers import UserSerializer
+from djoser.serializers import UserSerializer, TokenCreateSerializer
 
-from .models import Tag, Ingredient, Recipe, IngredientRecipe, TagRecipe
+from .models import Tag, Ingredient, Recipe, IngredientRecipe, TagRecipe, Follow
 
 from django.contrib.auth import get_user_model
 
@@ -44,6 +44,28 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'slug')
 
 
+class CustomUserSerializer(UserSerializer):
+    #is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
+'''
+    def get_is_subscribed(self, obj):
+        print(f'OBJECT: {obj}')
+        print(f'SELF: {self}')
+        print(f'USER: {self.context}')
+        for user in Follow.objects.all().filter(user=obj):
+            print(f'FOLLOW: {user}')
+        return False
+'''
+
+class GetTokenSerializer(TokenCreateSerializer):
+    class Meta:
+        model = User
+        fields = ('password', 'email')
+
+
 class IngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -52,78 +74,75 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
-    ingredient = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-        #source='ingredient')
+    id = serializers.SlugRelatedField(queryset=Ingredient.objects.all(),
+                                      slug_field='id', required=True, source='ingredient')
+    name = serializers.CharField(source='ingredient.name', read_only=True)
+    measurement_unit = serializers.CharField(source='ingredient.measurement_unit', read_only=True)
 
     class Meta:
         model = IngredientRecipe
-        fields = ('ingredient', 'amount')
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+        read_only_fields = ('name', 'measurement_unit')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        #representation['id'] = serializers.IntegerField(source='ingredient.id')
+        return representation
 
 
-class CustomUserSerializer(UserSerializer):
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
-
-
-class RecipeGetSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True)
-    author = CustomUserSerializer()
-    ingredients = IngredientRecipeSerializer()
+class RecipeSerializer(serializers.ModelSerializer):
+    author = CustomUserSerializer(read_only=True)
+    tags = serializers.ChoiceField(choices=Tag.objects.all(), required=True, many=True)
+    #serializers.SlugRelatedField(queryset=Tag.objects.all(),
+            #                            slug_field='id', required=True, many=True)
+    ingredients = IngredientRecipeSerializer(many=True, source='ingredients_used')
     image = Base64ImageField(required=False, allow_null=True)
-    image_url = serializers.SerializerMethodField(
-        'get_image_url',
-        read_only=True,
-    )
+    #image_url = serializers.SerializerMethodField(
+    #    'get_image_url',
+    #    read_only=True,
+    #)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'image_url','text', 'cooking_time'
+            'id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_card',
+            'name', 'image', 'text', 'cooking_time'
         )
-
-    def get_image_url(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
-
-
-class RecipePostSerializer(serializers.ModelSerializer):
-    tags = serializers.SlugRelatedField(queryset=Tag.objects.all(),
-                                        slug_field='id', required=True, many=True)
-    ingredients = IngredientRecipeSerializer(many=True)
-    image = Base64ImageField(required=False, allow_null=True)
-    image_url = serializers.SerializerMethodField(
-        'get_image_url',
-        read_only=True,
-    )
-
-    class Meta:
-        model = Recipe
-        fields = ('ingredients', 'tags', 'name', 'text', 'cooking_time', 'image', 'image_url')
+        read_only_fields = ('id', 'author', 'is_favorited', 'is_in_shopping_card')
 
     def create(self, validated_data):
-        ingredients = validated_data.pop('ingredients')
+        print(f'VALIDATED_DATA: {validated_data}')
+        ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
-            print(ingredient['ingredient'])
+            #print(ingredient['id'])
             IngredientRecipe.objects.create(ingredient=ingredient['ingredient'], recipe=instance, amount=ingredient['amount'])
         for tag in tags:
             TagRecipe.objects.create(tag=tag, recipe=instance)
         return instance
 
-    #def to_representation(self, instance):
-    #    representation = super(EquipmentSerializer, self).to_representation(instance)
-    #    representation['assigment'] = AssignmentSerializer(instance.assigment_set.all(), many=True).data
-    #    return representation
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['tags'] = TagSerializer(instance.tags, many=True).data
+        return representation
+        '''
+        testdata = Tag.objects.all()
+        print(f'QUERYSET: {testdata}')
+        print(f'QUERYSET_TYPE: {type(testdata)}')
+        for test in testdata:
+            print(f'OBJECT: {test}')
+            print(f'OBJECT_TYPE: {type(test)}')
+        testdata = Tag.objects.all().values()
+        print(f'QUERYSET_VAL: {testdata}')
+        print(f'QUERYSET_VAL_TYPE: {type(testdata)}')
+        for test in testdata:
+            print(f'VALUE: {test}')
+            print(f'VALUE_TYPE: {type(test)}')
+        return representation
+        '''
 
-    def get_image_url(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
-
-
-
-
+    #def get_image_url(self, obj):
+    #    if obj.image:
+    #        return obj.image.url
+    #    return None

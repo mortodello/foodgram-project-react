@@ -1,6 +1,6 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .managers import CustomUserManager
 from django.db import models
-
 
 USER = 'user'
 MODERATOR = 'moderator'
@@ -12,14 +12,28 @@ ROLES = (
 )
 
 
-class CustomUser(AbstractUser):
-    email = models.EmailField(unique=True)
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    username = models.CharField(max_length=40, unique=True)
+    first_name = models.CharField(max_length=40)
+    last_name = models.CharField(max_length=40)
+    email = models.EmailField(max_length=40, unique=True)
+    password = models.CharField(max_length=40, unique=True)
+    last_login = models.DateTimeField(auto_now_add=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
     role = models.CharField(
         max_length=max([len(x) for (x, _) in ROLES]),
         choices=ROLES,
         default=USER
     )
-    is_subscribed = models.BooleanField(null=True)
+    is_subscribed = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    objects = CustomUserManager()
 
     class Meta:
         ordering = ('date_joined',)

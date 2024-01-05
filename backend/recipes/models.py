@@ -11,6 +11,22 @@ INGREDIENT_NAME_MAX_LENGTH = 50
 INGREDIENT_UNITS_MAX_LENGTH = 20
 
 
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='followers')
+    following = models.ForeignKey(
+        User, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'following'],
+                name='unique_user_following'
+            )
+        ]
+
+
 class Ingredient(models.Model):
     name = models.CharField(max_length=INGREDIENT_NAME_MAX_LENGTH)
     measurement_unit = models.CharField(max_length=INGREDIENT_UNITS_MAX_LENGTH)
@@ -41,8 +57,6 @@ class Recipe(models.Model):
         default=None
     )
     text = models.TextField(max_length=RECIPE_TEXT_MAX_LENGTH)
-# Ингредиенты — продукты для приготовления блюда по рецепту.
-# Множественное поле с выбором из предустановленного списка и с указанием количества и единицы измерения.
     ingredients = models.ManyToManyField(
         Ingredient,
         related_name='recipes',
@@ -50,13 +64,13 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(
         Tag,
-        related_name='recipes',
+        related_name='recipes_with_tag',
         through='TagRecipe'
     )
     # как-то указать, что в минутах
     cooking_time = models.IntegerField()
-    is_favorited = models.BooleanField(null=True)
-    is_in_shopping_cart = models.BooleanField(null=True)
+    is_favorited = models.BooleanField(default=False)
+    is_in_shopping_card = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -72,40 +86,35 @@ class TagRecipe(models.Model):
         null=True, blank=True
     )
 
-    
+
 class IngredientRecipe(models.Model):
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.SET_NULL,
-        null=True, blank=True
+        Recipe, on_delete=models.CASCADE,
+        related_name='ingredients_used'
     )
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.SET_NULL,
-        null=True, blank=True
+        Ingredient, on_delete=models.CASCADE, related_name='recipes_used'
     )
     amount = models.FloatField()
 
 
-#class Follow(models.Model):
-#    user = models.ForeignKey(
-#        User, on_delete=models.CASCADE, related_name='followers')
-#    following = models.ForeignKey(
-#        User, on_delete=models.CASCADE)
-#
-#    class Meta:
-#        constraints = [
-#            models.UniqueConstraint(
-#                fields=['user', 'following'],
-#                name='unique_user_following'
-#            )
-#        ]
+class Favorites(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True
+    )
+    recipes = models.ForeignKey(
+        Recipe, on_delete=models.SET_NULL,
+        null=True
+    )
 
 
-#class Favorites(models.Model):
-#    user = models.ForeignKey(
-#        User, on_delete=models.SET_NULL,
-#        null=True
-#    )
-#    recipes = models.ForeignKey(
-#        Recipe, on_delete=models.SET_NULL,
-#        null=True
-#    )
+class ShoppingCard(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True
+    )
+    recipes = models.ForeignKey(
+        Recipe, on_delete=models.SET_NULL,
+        null=True
+    )

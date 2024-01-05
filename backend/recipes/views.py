@@ -1,12 +1,12 @@
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
-from .models import Tag, Ingredient, Recipe
+from .models import Tag, Ingredient, Recipe, IngredientRecipe, Favorites, ShoppingCard, Follow
 
 from .serializers import (
     CustomUserSerializer, TagSerializer,
-    IngredientSerializer, RecipeGetSerializer,
-    RecipePostSerializer
+    IngredientSerializer, RecipeSerializer,
+    IngredientRecipeSerializer
     )
 from djoser.views import UserViewSet
 
@@ -16,23 +16,31 @@ User = get_user_model()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeGetSerializer
+    serializer_class = RecipeSerializer
     pagination_class = PageNumberPagination
 
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return RecipePostSerializer
-        if self.action == 'partial_update':
-            return RecipePostSerializer
-        return RecipeGetSerializer
-
     def perform_create(self, serializer):
-        serializer.save(author=User.objects.get(pk=1))#self.request.user)
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        for recipe in queryset:
+            if Favorites.objects.filter(recipes=recipe, user=self.request.user).exists():
+                recipe.is_favorited = True
+            if ShoppingCard.objects.filter(recipes=recipe, user=self.request.user).exists():
+                recipe.is_in_shopping_card = True
+        return queryset
 
 
 class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        for user in queryset:
+            if Follow.objects.filter(following=self.request.user, user=user).exists():
+                user.is_subscribed = True
+        return queryset
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -44,4 +52,10 @@ class TagViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = PageNumberPagination
+
+
+class IngredientRecipeViewSet(viewsets.ModelViewSet):
+    queryset = IngredientRecipe.objects.all()
+    serializer_class = IngredientRecipeSerializer
     pagination_class = PageNumberPagination
