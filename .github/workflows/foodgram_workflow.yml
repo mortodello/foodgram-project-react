@@ -125,7 +125,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_gateway:latest
 # деплой проекта
-# wrong passphrase
   deploy:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -144,7 +143,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "docker-compose.yml"
-        target: "foodgram"
+        target: "foodgram-project-react"
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
@@ -153,16 +152,16 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          cd foodgram
+          cd foodgram-project-react
           # Выполняет pull образов с Docker Hub
-          sudo docker compose -f docker-compose.yml pull
+          sudo docker compose pull
           # Перезапускает все контейнеры в Docker Compose
-          sudo docker compose -f docker-compose.yml down
-          sudo docker compose -f docker-compose.yml up -d
+          sudo docker compose down
+          sudo docker compose up -d
           # Выполняет миграции и сбор статик
-          sudo docker compose -f docker-compose.yml exec backend python manage.py migrate
-          sudo docker compose -f docker-compose.yml exec backend python manage.py collectstatic
-          sudo docker compose -f docker-compose.yml exec backend cp -r /app/collected_static/. /backend_static/static/
+          sudo docker compose exec backend python manage.py migrate
+          sudo docker compose exec backend python manage.py collectstatic
+          sudo docker compose exec backend cp -r /app/collected_static/. /backend_static/static/
 # отправка сообщения в телегу
   send_message:
     runs-on: ubuntu-latest
