@@ -13,15 +13,17 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: droj/foodgram_frontend
+  #  build:
+  #    context: ../frontend
+  #    dockerfile: Dockerfile
     command: cp -r /app/build/. /frontend_static/
     volumes:
     #  - ../frontend/:/app/result_build/
       - static:/frontend_static
   backend:
-    build: ../backend/
+    image: droj/foodgram_backend
+  #  build: ../backend/
     env_file: .env
     volumes:
       - media:/app/media/
