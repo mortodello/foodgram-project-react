@@ -1,14 +1,12 @@
 import base64
-# import datetime as dt
 
 import webcolors
-from django.core.files.base import ContentFile
-from rest_framework import serializers
-from djoser.serializers import UserSerializer, TokenCreateSerializer
-
-from .models import Tag, Ingredient, Recipe, IngredientRecipe, TagRecipe, Follow
-
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from djoser.serializers import TokenCreateSerializer, UserSerializer
+from rest_framework import serializers
+
+from .models import Ingredient, IngredientRecipe, Recipe, Tag, TagRecipe
 
 User = get_user_model()
 
@@ -45,11 +43,14 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class CustomUserSerializer(UserSerializer):
-    #is_subscribed = serializers.SerializerMethodField()
+    # is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed')
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'is_subscribed')
+
+
 '''
     def get_is_subscribed(self, obj):
         print(f'OBJECT: {obj}')
@@ -59,6 +60,7 @@ class CustomUserSerializer(UserSerializer):
             print(f'FOLLOW: {user}')
         return False
 '''
+
 
 class GetTokenSerializer(TokenCreateSerializer):
     class Meta:
@@ -75,9 +77,13 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     id = serializers.SlugRelatedField(queryset=Ingredient.objects.all(),
-                                      slug_field='id', required=True, source='ingredient')
+                                      slug_field='id', required=True,
+                                      source='ingredient')
     name = serializers.CharField(source='ingredient.name', read_only=True)
-    measurement_unit = serializers.CharField(source='ingredient.measurement_unit', read_only=True)
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit',
+        read_only=True
+    )
 
     class Meta:
         model = IngredientRecipe
@@ -86,28 +92,33 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        #representation['id'] = serializers.IntegerField(source='ingredient.id')
+        # representation['id'] =
+        # serializers.IntegerField(source='ingredient.id')
         return representation
 
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = CustomUserSerializer(read_only=True)
     tags = serializers.SlugRelatedField(queryset=Tag.objects.all(),
-                                        slug_field='id', required=True, many=True)
-    ingredients = IngredientRecipeSerializer(many=True, source='ingredients_used')
+                                        slug_field='id', required=True,
+                                        many=True)
+    ingredients = IngredientRecipeSerializer(many=True,
+                                             source='ingredients_used')
     image = Base64ImageField(required=False, allow_null=True)
-    #image_url = serializers.SerializerMethodField(
+    # image_url = serializers.SerializerMethodField(
     #    'get_image_url',
     #    read_only=True,
-    #)
+    # )
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_card',
+            'id', 'tags', 'author', 'ingredients',
+            'is_favorited', 'is_in_shopping_card',
             'name', 'image', 'text', 'cooking_time'
         )
-        read_only_fields = ('id', 'author', 'is_favorited', 'is_in_shopping_card')
+        read_only_fields = ('id', 'author', 'is_favorited',
+                            'is_in_shopping_card')
 
     def create(self, validated_data):
         print(f'VALIDATED_DATA: {validated_data}')
@@ -115,8 +126,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
-            #print(ingredient['id'])
-            IngredientRecipe.objects.create(ingredient=ingredient['ingredient'], recipe=instance, amount=ingredient['amount'])
+            # print(ingredient['id'])
+            IngredientRecipe.objects.create(
+                ingredient=ingredient['ingredient'],
+                recipe=instance,
+                amount=ingredient['amount']
+            )
         for tag in tags:
             TagRecipe.objects.create(tag=tag, recipe=instance)
         return instance
@@ -141,7 +156,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return representation
         '''
 
-    #def get_image_url(self, obj):
+    # def get_image_url(self, obj):
     #    if obj.image:
     #        return obj.image.url
     #    return None

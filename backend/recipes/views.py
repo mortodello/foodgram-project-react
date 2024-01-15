@@ -1,16 +1,13 @@
+from django.contrib.auth import get_user_model
+from djoser.views import UserViewSet
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
-from .models import Tag, Ingredient, Recipe, IngredientRecipe, Favorites, ShoppingCard, Follow
-
-from .serializers import (
-    CustomUserSerializer, TagSerializer,
-    IngredientSerializer, RecipeSerializer,
-    IngredientRecipeSerializer
-    )
-from djoser.views import UserViewSet
-
-from django.contrib.auth import get_user_model
+from .models import (Favorites, Follow, Ingredient, IngredientRecipe, Recipe,
+                     ShoppingCard, Tag)
+from .serializers import (CustomUserSerializer, IngredientRecipeSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          TagSerializer)
 
 User = get_user_model()
 
@@ -25,9 +22,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Recipe.objects.all()
         for recipe in queryset:
-            if Favorites.objects.filter(recipes=recipe, user=self.request.user).exists():
+            if Favorites.objects.filter(recipes=recipe,
+                                        user=self.request.user).exists():
                 recipe.is_favorited = True
-            if ShoppingCard.objects.filter(recipes=recipe, user=self.request.user).exists():
+            if ShoppingCard.objects.filter(recipes=recipe,
+                                           user=self.request.user).exists():
                 recipe.is_in_shopping_card = True
         return queryset
 
@@ -38,7 +37,8 @@ class CustomUserViewSet(UserViewSet):
     def get_queryset(self):
         queryset = User.objects.all()
         for user in queryset:
-            if Follow.objects.filter(following=self.request.user, user=user).exists():
+            if Follow.objects.filter(following=self.request.user,
+                                     user=user).exists():
                 user.is_subscribed = True
         return queryset
 

@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
@@ -9,7 +9,6 @@ TAG_NAME_MAX_LENGTH = 10
 TAG_SLUG_MAX_LENGTH = 10
 INGREDIENT_NAME_MAX_LENGTH = 50
 INGREDIENT_UNITS_MAX_LENGTH = 20
-
 
 
 class Follow(models.Model):
@@ -47,8 +46,8 @@ class Tag(models.Model):
 class Recipe(models.Model):
     # classsss?
     author = models.ForeignKey(
-       # User, on_delete=models.CASCADE, related_name='%(class)ss'
-       User, on_delete=models.CASCADE, related_name='recipes'
+        # User, on_delete=models.CASCADE, related_name='%(class)ss'
+        User, on_delete=models.CASCADE, related_name='recipes'
     )
     name = models.CharField(max_length=RECIPE_NAME_MAX_LENGTH)
     image = models.ImageField(

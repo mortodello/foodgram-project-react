@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from .managers import CustomUserManager
 from django.db import models
+
+from .managers import CustomUserManager
 
 USER = 'user'
 MODERATOR = 'moderator'
