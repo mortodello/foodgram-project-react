@@ -19,7 +19,7 @@ services:
   #    dockerfile: Dockerfile
     command: cp -r /app/build/. /frontend_static/
     volumes:
-    #  - ../frontend/:/app/result_build/
+      - ../frontend/:/app/result_build/
       - static:/frontend_static
   backend:
     image: droj/foodgram_backend
