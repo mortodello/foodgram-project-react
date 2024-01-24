@@ -49,6 +49,28 @@ class CustomUserSerializer(UserSerializer):
         model = User
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed')
+'''
+    def create(self, validated_data):
+        # print(f'VALIDATED_DATA: {validated_data}')
+        ingredients = validated_data.pop('ingredients_used')
+        tags = validated_data.pop('tags')
+        instance = Recipe.objects.create(**validated_data)
+        for ingredient in ingredients:
+            # print(ingredient['id'])
+            IngredientRecipe.objects.create(
+                ingredient=ingredient['ingredient'],
+                recipe=instance,
+                amount=ingredient['amount']
+            )
+        for tag in tags:
+            TagRecipe.objects.create(tag=tag, recipe=instance)
+        return instance
+'''
+    #def to_representation(self, instance):
+    #    representation = super().to_representation(instance)
+    #    representation.pop['is_subscribed']
+    #    representation['password'] = serializers.CharField()
+    #    return representation
 
 
 '''

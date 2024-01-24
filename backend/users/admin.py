@@ -3,8 +3,24 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import CustomUser
 
-UserAdmin.fieldsets += (
-    ('Extra Fields', {'fields': ('role',)}),
+
+class RecipeAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'author'
+    )
+    # list_editable = ('cooking_time',)
+    # search_fields = ('name',)
+    list_filter = ('author', 'name', 'tags')
+
+
+class UserAdminModel(UserAdmin):
+    readonly_fields = ['last_login', 'date_joined']
+    list_filter = ('email', 'username')
+
+
+UserAdminModel.fieldsets += (
+    ('Особое', {'fields': ('role',)}),
 )
 
-admin.site.register(CustomUser, UserAdmin)
+admin.site.register(CustomUser, UserAdminModel)

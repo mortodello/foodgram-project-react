@@ -14,17 +14,18 @@ ROLES = (
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(max_length=40, unique=True)
-    first_name = models.CharField(max_length=40)
-    last_name = models.CharField(max_length=40)
-    email = models.EmailField(max_length=40, unique=True)
-    password = models.CharField(max_length=40, unique=True)
-    last_login = models.DateTimeField(auto_now_add=True)
-    date_joined = models.DateTimeField(auto_now_add=True)
+    username = models.CharField(max_length=40, unique=True, verbose_name='Имя пользователя')
+    first_name = models.CharField(max_length=40, verbose_name='Имя')
+    last_name = models.CharField(max_length=40, verbose_name='Фамилия')
+    email = models.EmailField(max_length=40, unique=True, verbose_name='Почта')
+    password = models.CharField(max_length=150, unique=True, verbose_name='Пароль')
+    last_login = models.DateTimeField(auto_now_add=True, verbose_name='Последнее посещение')
+    date_joined = models.DateTimeField(auto_now_add=True, verbose_name='Дата регистрации')
     role = models.CharField(
         max_length=max([len(x) for (x, _) in ROLES]),
         choices=ROLES,
-        default=USER
+        default=USER,
+        verbose_name='Роль'
     )
     is_subscribed = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
