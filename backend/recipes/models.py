@@ -13,7 +13,8 @@ INGREDIENT_UNITS_MAX_LENGTH = 20
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='followers', verbose_name='Пользователь')
+        User, on_delete=models.CASCADE, related_name='followers',
+        verbose_name='Пользователь')
     following = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name='Подписан на')
 
@@ -32,8 +33,10 @@ class Follow(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=INGREDIENT_NAME_MAX_LENGTH, verbose_name='Название')
-    measurement_unit = models.CharField(max_length=INGREDIENT_UNITS_MAX_LENGTH, verbose_name='Единицы измерения')
+    name = models.CharField(max_length=INGREDIENT_NAME_MAX_LENGTH,
+                            verbose_name='Название')
+    measurement_unit = models.CharField(max_length=INGREDIENT_UNITS_MAX_LENGTH,
+                                        verbose_name='Единицы измерения')
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -44,9 +47,11 @@ class Ingredient(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=TAG_NAME_MAX_LENGTH, unique=True, verbose_name='Название')
+    name = models.CharField(max_length=TAG_NAME_MAX_LENGTH, unique=True,
+                            verbose_name='Название')
     color = models.CharField(max_length=6, unique=True, verbose_name='Цвет')
-    slug = models.SlugField(max_length=TAG_SLUG_MAX_LENGTH, unique=True, verbose_name='Слаг')
+    slug = models.SlugField(max_length=TAG_SLUG_MAX_LENGTH, unique=True,
+                            verbose_name='Слаг')
 
     class Meta:
         verbose_name = 'Тег'
@@ -60,15 +65,18 @@ class Recipe(models.Model):
     # classsss?
     author = models.ForeignKey(
         # User, on_delete=models.CASCADE, related_name='%(class)ss'
-        User, on_delete=models.CASCADE, related_name='recipes', verbose_name='Автор'
+        User, on_delete=models.CASCADE, related_name='recipes',
+        verbose_name='Автор'
     )
-    name = models.CharField(max_length=RECIPE_NAME_MAX_LENGTH, verbose_name='Название')
+    name = models.CharField(max_length=RECIPE_NAME_MAX_LENGTH,
+                            verbose_name='Название')
     image = models.ImageField(
         upload_to='recipes/images/',
         null=True,
         default=None, verbose_name='Изображение'
     )
-    text = models.TextField(max_length=RECIPE_TEXT_MAX_LENGTH, verbose_name='Текст')
+    text = models.TextField(max_length=RECIPE_TEXT_MAX_LENGTH,
+                            verbose_name='Текст')
     ingredients = models.ManyToManyField(
         Ingredient,
         related_name='recipes',
@@ -81,8 +89,10 @@ class Recipe(models.Model):
     )
     # как-то указать, что в минутах
     cooking_time = models.IntegerField(verbose_name='Время приготовления')
-    is_favorited = models.BooleanField(default=False, verbose_name='В избранном')
-    is_in_shopping_card = models.BooleanField(default=False, verbose_name='В списке покупок')
+    is_favorited = models.BooleanField(default=False,
+                                       verbose_name='В избранном')
+    is_in_shopping_card = models.BooleanField(default=False,
+                                              verbose_name='В списке покупок')
 
     class Meta:
         verbose_name = 'Рецепт'
