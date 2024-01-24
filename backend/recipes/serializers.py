@@ -49,6 +49,8 @@ class CustomUserSerializer(UserSerializer):
         model = User
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed')
+
+
 '''
     def create(self, validated_data):
         # print(f'VALIDATED_DATA: {validated_data}')
@@ -66,11 +68,11 @@ class CustomUserSerializer(UserSerializer):
             TagRecipe.objects.create(tag=tag, recipe=instance)
         return instance
 '''
-    #def to_representation(self, instance):
-    #    representation = super().to_representation(instance)
-    #    representation.pop['is_subscribed']
-    #    representation['password'] = serializers.CharField()
-    #    return representation
+# def to_representation(self, instance):
+#    representation = super().to_representation(instance)
+#    representation.pop['is_subscribed']
+#    representation['password'] = serializers.CharField()
+#    return representation
 
 
 '''
