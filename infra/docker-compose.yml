@@ -1,4 +1,4 @@
-version: '3.3' # hell
+version: '3.3' # hell is around
 
 volumes:
   pg_data:
