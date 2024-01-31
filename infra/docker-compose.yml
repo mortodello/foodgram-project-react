@@ -28,8 +28,8 @@ services:
     env_file: .env
     volumes:
       - media:/app/media/
-      - static:/backend_static/
-      - docs:/backend_static/
+      - static:/backend_static
+      - docs:/backend_static
   nginx:
   #  image: nginx:1.19.3
     image: droj/foodgram_gateway
