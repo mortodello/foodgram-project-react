@@ -162,7 +162,6 @@ jobs:
           sudo docker compose exec backend python manage.py migrate
           sudo docker compose exec backend python manage.py collectstatic
           sudo docker compose exec backend cp -r /app/collected_static/. /backend_static/static/
-#          sudo docker compose exec backend cp -r /app/docs/. /backend_static/docs/
 # отправка сообщения в телегу
   send_message:
     runs-on: ubuntu-latest
