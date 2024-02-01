@@ -152,7 +152,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          cd foodgram-project-react
+          cd foodgram-project-react/infra
           # Выполняет pull образов с Docker Hub
           sudo docker compose pull
           # Перезапускает все контейнеры в Docker Compose
