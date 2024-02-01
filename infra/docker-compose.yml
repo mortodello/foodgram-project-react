@@ -4,6 +4,7 @@ volumes:
   pg_data:
   media:
   static:
+  docs:
 
 services:
 
@@ -28,6 +29,7 @@ services:
     volumes:
       - media:/app/media/
       - static:/backend_static
+      - docs:/docs
   nginx:
   #  image: nginx:1.19.3
     image: droj/foodgram_gateway
@@ -39,3 +41,4 @@ services:
       # - ../docs/:/usr/share/nginx/html/api/docs/
       - media:/media/
       - static:/staticfiles/
+      - docs:/docs/
