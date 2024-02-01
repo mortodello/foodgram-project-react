@@ -142,7 +142,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        source: "./infra/docker-compose.yml"
+        source: "docker-compose.yml"
         target: "foodgram-project-react"
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -152,7 +152,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          cd foodgram-project-react/infra
+          cd foodgram-project-react
           # Выполняет pull образов с Docker Hub
           sudo docker compose pull
           # Перезапускает все контейнеры в Docker Compose
