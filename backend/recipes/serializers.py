@@ -6,7 +6,8 @@ from django.core.files.base import ContentFile
 from djoser.serializers import TokenCreateSerializer, UserSerializer
 from rest_framework import serializers
 
-from .models import Ingredient, IngredientRecipe, Recipe, Tag, TagRecipe
+from .models import (Ingredient, IngredientRecipe, Recipe, Tag, TagRecipe,
+                     Follow, Favorites)
 
 User = get_user_model()
 
@@ -145,7 +146,7 @@ class RecipeSerializer(serializers.ModelSerializer):
                             'is_in_shopping_card')
 
     def create(self, validated_data):
-        print(f'VALIDATED_DATA: {validated_data}')
+        # print(f'VALIDATED_DATA: {validated_data}')
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
@@ -184,3 +185,39 @@ class RecipeSerializer(serializers.ModelSerializer):
     #    if obj.image:
     #        return obj.image.url
     #    return None
+
+
+class FollowSerializer(UserSerializer):
+    recipes = serializers.SlugRelatedField(queryset=Recipe.objects.all(),
+                                           slug_field='id', many=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+        read_only_fields = ('email', 'id', 'username', 'first_name',
+                            'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['recipes'] = RecipeSerializer(instance.recipes.all(), many=True).data
+        for recipe in representation['recipes']:
+            recipe.pop('tags')
+            recipe.pop('author')
+            recipe.pop('ingredients')
+            recipe.pop('is_favorited')
+            recipe.pop('is_in_shopping_card')
+            recipe.pop('text')
+        return representation
+
+
+class FavoritesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
