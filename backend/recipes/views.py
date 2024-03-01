@@ -1,18 +1,16 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count
 from djoser.views import UserViewSet
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import status, viewsets, mixins
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import CreateAPIView
+from rest_framework.decorators import action
 
 from .models import (Favorites, Follow, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCard, Tag)
-from .serializers import (CustomUserSerializer, IngredientRecipeSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          TagSerializer, FollowSerializer,
-                          FavoritesSerializer)
+from .serializers import (CustomUserSerializer, IngredientSerializer,
+                          RecipeSerializer,
+                          TagSerializer, FollowSerializer)
 
 User = get_user_model()
 
@@ -35,87 +33,43 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 recipe.is_in_shopping_card = True
         return queryset
 
+    @action(detail=True, methods=['get', 'post', 'delete'])
+    def favorite(self, request, pk):
+        Favorites.objects.create(user=self.request.user, recipes=Recipe.objects.get(id=pk))
+        serializer = RecipeSerializer(Recipe.objects.get(id=pk),
+                                      context={'request': request})
+        return Response(serializer.data)
+
 
 class CustomUserViewSet(UserViewSet):
+    queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-
-    def get_queryset(self):
-        queryset = User.objects.all()
-        for user in queryset:
-            if Follow.objects.filter(following=self.request.user,
-                                     user=user).exists():
-                user.is_subscribed = True
-        return queryset
-
-
-class FollowViewSet(viewsets.ModelViewSet):
-    serializer_class = FollowSerializer
-
-    def get_queryset(self):
-        user = User.objects.get(username=self.request.user)
-        users = user.followers.all()
-        queryset = []
-        id_set = []
-        for user in users:
-            id_set.append(user.following.id)
-        for id in id_set:
-            queryset.append(User.objects.get(pk=id))
-        return queryset
-
-
-class FavoritesViewSet(viewsets.ModelViewSet):
-    serializer_class = FavoritesSerializer
     pagination_class = PageNumberPagination
 
-    def get_queryset(self):
-        return Recipe.objects.filter(pk=self.kwargs['id'])
+    @action(detail=False, methods=['get',])
+    def subscriptions(self, request):
+        user = User.objects.get(username=self.request.user)
+        users = user.followers.all()
+        serializer = FollowSerializer([User.objects.get(pk=user.following.id) for user in users],
+                                      context={'request': request},
+                                      many=True)
+        return Response(serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        recipe = Recipe.objects.get(pk=request.id)
-        return Favorites.objects.create(user=request.user, recipes=recipe)
-
-
-class FavoriteView(CreateAPIView):
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = RecipeSerializer
-        kwargs.setdefault('context', self.get_serializer_context())
-        return serializer_class(*args, **kwargs)
-
-    def create(self, request, *args, **kwargs):
-        print(kwargs['id'])
-        #serializer = self.get_serializer(data=request.data)
-        #serializer.is_valid(raise_exception=True)
-        #print(serializer.data)
-        recipe = Recipe.objects.get(pk=kwargs['id'])
-        Favorites.objects.create(user=request.user, recipes=recipe)
-        #headers = self.get_success_headers(serializer.data)
-        #print(recipe.__dict__)
-        serializer = FavoritesSerializer(instance=recipe)
-        #serializer.is_valid(raise_exception=True)
-        #print(serializer.data)
-        #serializer.data.pop('tags')
-        #serializer.data.pop('author')
-        #serializer.data.pop('ingredients')
-        #serializer.data.pop('is_favorited')
-        #serializer.data.pop('is_in_shopping_card')
-        #serializer.data.pop('text')
-        #print(serializer.data['author'])
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    @action(detail=True, methods=['get', 'post', 'delete'])
+    def subscribe(self, request, id):
+        Follow.objects.create(user=self.request.user, following=User.objects.get(pk=id))
+        serializer = FollowSerializer(User.objects.get(pk=id),
+                                      context={'request': request})
+        return Response(serializer.data)
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = PageNumberPagination
 
 
-class IngredientViewSet(viewsets.ModelViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    pagination_class = PageNumberPagination
-
-
-class IngredientRecipeViewSet(viewsets.ModelViewSet):
-    queryset = IngredientRecipe.objects.all()
-    serializer_class = IngredientRecipeSerializer
     pagination_class = PageNumberPagination
