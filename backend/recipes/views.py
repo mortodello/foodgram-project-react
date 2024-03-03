@@ -5,6 +5,7 @@ from rest_framework import status, viewsets, mixins
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import CreateAPIView
 from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (Favorites, Follow, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCard, Tag)
@@ -18,8 +19,13 @@ User = get_user_model()
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('tags',)
 
     def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
     def get_queryset(self):

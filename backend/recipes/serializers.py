@@ -125,6 +125,9 @@ class RecipeSerializer(serializers.ModelSerializer):
             TagRecipe.objects.create(tag=tag, recipe=instance)
         return instance
 
+    def update(self, validated_data):
+        pass
+
     def to_representation(self, instance):
         full_representation = super().to_representation(instance)
         full_representation['tags'] = TagSerializer(instance.tags, many=True).data
