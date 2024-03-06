@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -29,7 +30,7 @@ class Follow(models.Model):
         verbose_name_plural = 'подписки'
 
     def __str__(self):
-        return self.user.username
+        return f'{self.user.username} подписан на {self.author.username}'
 
 
 class Ingredient(models.Model):
@@ -62,9 +63,7 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
-    # classsss?
     author = models.ForeignKey(
-        # User, on_delete=models.CASCADE, related_name='%(class)ss'
         User, on_delete=models.CASCADE, related_name='recipes',
         verbose_name='Автор'
     )
@@ -87,14 +86,17 @@ class Recipe(models.Model):
         related_name='recipes_with_tag',
         through='TagRecipe', verbose_name='Теги'
     )
-    # как-то указать, что в минутах
-    cooking_time = models.IntegerField(verbose_name='Время приготовления')
+    cooking_time = models.IntegerField(verbose_name='Время приготовления',
+                                       validators=[MinValueValidator(
+                                           1, 'Время приготовления не должно быть меньше 1 минуты'
+                                           )])
     is_favorited = models.BooleanField(default=False,
                                        verbose_name='В избранном')
     is_in_shopping_card = models.BooleanField(default=False,
                                               verbose_name='В списке покупок')
 
     class Meta:
+        ordering = ['id']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -121,7 +123,9 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE, related_name='recipes_used'
     )
-    amount = models.FloatField()
+    amount = models.FloatField('Количество', validators=[
+        MinValueValidator(0.1,
+                          'Количество ингредиентов не может быть меньше 0.1')])
 
 
 class Favorites(models.Model):
@@ -136,6 +140,13 @@ class Favorites(models.Model):
     )
 
     class Meta:
+        ordering = ['id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_user_recipe_favorite'
+            )
+        ]
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
@@ -145,17 +156,27 @@ class Favorites(models.Model):
 
 class ShoppingCard(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.SET_NULL,
-        null=True, verbose_name='Пользователь'
+        User, on_delete=models.CASCADE,
+        related_name='carts',
+        verbose_name='Пользователь'
     )
     recipes = models.ForeignKey(
-        Recipe, on_delete=models.SET_NULL,
-        null=True, verbose_name='Рецепт'
+        Recipe, on_delete=models.CASCADE,
+        related_name='carts',
+        verbose_name='Рецепт'
     )
 
     class Meta:
+        ordering = ['id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_user_recipe_cart'
+            )
+        ]
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 
     def __str__(self):
-        return self.user.username
+        return (f'{self.user.username} добавил'
+                f'{self.recipe.name} в список покупок')

@@ -144,10 +144,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'recipes.pagination.PageLimitPagination',
     'PAGE_SIZE': 6,
 
 }
+
 
 DJOSER = {
     'SERIALIZERS': {
@@ -158,8 +159,9 @@ DJOSER = {
     },
 
     'PERMISSIONS': {
-        'user': ['rest_framework.permissions.AllowAny'],
-    }
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
+    },
 
 
 }

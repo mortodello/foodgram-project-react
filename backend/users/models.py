@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
 from .managers import CustomUserManager
+from .validators import validate_username
 
 USER = 'user'
 MODERATOR = 'moderator'
@@ -11,15 +12,24 @@ ROLES = (
     (MODERATOR, 'Модератор'),
     (ADMIN, 'Администратор'),
 )
+USERNAME_MAX_LENGTH = 150
+FIRST_NAME_MAX_LENGTH = 150
+LAST_NAME_MAX_LENGTH = 150
+EMAIL_MAX_LENGTH = 254
+PASSWORD_MAX_LENGTH = 150
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(max_length=40, unique=True,
+    username = models.CharField(max_length=USERNAME_MAX_LENGTH, unique=True,
+                                validators=[validate_username, ],
                                 verbose_name='Имя пользователя')
-    first_name = models.CharField(max_length=40, verbose_name='Имя')
-    last_name = models.CharField(max_length=40, verbose_name='Фамилия')
-    email = models.EmailField(max_length=40, unique=True, verbose_name='Почта')
-    password = models.CharField(max_length=150, unique=True,
+    first_name = models.CharField(max_length=FIRST_NAME_MAX_LENGTH,
+                                  verbose_name='Имя')
+    last_name = models.CharField(max_length=LAST_NAME_MAX_LENGTH,
+                                 verbose_name='Фамилия')
+    email = models.EmailField(max_length=EMAIL_MAX_LENGTH, unique=True,
+                              verbose_name='Почта')
+    password = models.CharField(max_length=PASSWORD_MAX_LENGTH, unique=True,
                                 verbose_name='Пароль')
     last_login = models.DateTimeField(auto_now_add=True,
                                       verbose_name='Последнее посещение')
@@ -48,19 +58,3 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
-
-# property вернули )) как я понял по пермишенам,
-# is_superuser существует по умолчанию, а is_stuff валит тесты
-# с ошибкой: TypeError:
-# CustomUser() got an unexpected keyword argument 'is_staff'
-    @property
-    def is_admin(self):
-        if self.role == ADMIN:
-            return True
-        return False
-
-    @property
-    def is_moderator(self):
-        if self.role == MODERATOR:
-            return True
-        return False
