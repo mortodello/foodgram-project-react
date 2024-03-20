@@ -93,7 +93,7 @@ class CustomUserViewSet(UserViewSet):
     http_method_names = ['get', 'post', 'patch']
     permission_classes = (AllowAny, )
 
-    @action(detail=False, methods=['get',],
+    @action(detail=False, methods=['get', ],
             permission_classes=(IsAuthenticated,),
             pagination_class=LimitOffsetPagination
             )
@@ -116,7 +116,7 @@ class CustomUserViewSet(UserViewSet):
                                              context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['get',],
+    @action(detail=False, methods=['get', ],
             permission_classes=(IsAuthenticated,))
     def me(self, request):
         serializer = CustomUserSerializer(
