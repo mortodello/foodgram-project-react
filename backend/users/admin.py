@@ -9,8 +9,6 @@ class RecipeAdmin(admin.ModelAdmin):
         'name',
         'author'
     )
-    # list_editable = ('cooking_time',)
-    # search_fields = ('name',)
     list_filter = ('author', 'name', 'tags')
 
 

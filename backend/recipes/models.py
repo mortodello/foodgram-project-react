@@ -4,7 +4,7 @@ from django.db import models
 
 User = get_user_model()
 
-RECIPE_NAME_MAX_LENGTH = 30
+RECIPE_NAME_MAX_LENGTH = 200
 RECIPE_TEXT_MAX_LENGTH = 50
 TAG_NAME_MAX_LENGTH = 10
 TAG_SLUG_MAX_LENGTH = 10
@@ -12,8 +12,8 @@ INGREDIENT_NAME_MAX_LENGTH = 50
 INGREDIENT_UNITS_MAX_LENGTH = 20
 
 
-class Follow(models.Model):
-    user = models.ForeignKey(
+class Subscriptions(models.Model):
+    follower = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='followers',
         verbose_name='Пользователь')
     following = models.ForeignKey(
@@ -22,15 +22,15 @@ class Follow(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'following'],
-                name='unique_user_following'
+                fields=['follower', 'following'],
+                name='unique_follower_following'
             )
         ]
         verbose_name = 'Подписки'
         verbose_name_plural = 'подписки'
 
     def __str__(self):
-        return f'{self.user.username} подписан на {self.author.username}'
+        return f'{self.follower.username} подписан на {self.following.username}'
 
 
 class Ingredient(models.Model):
@@ -71,11 +71,9 @@ class Recipe(models.Model):
                             verbose_name='Название')
     image = models.ImageField(
         upload_to='recipes/images/',
-        null=True,
-        default=None, verbose_name='Изображение'
+        verbose_name='Изображение'
     )
-    text = models.TextField(max_length=RECIPE_TEXT_MAX_LENGTH,
-                            verbose_name='Текст')
+    text = models.TextField(verbose_name='Текст')
     ingredients = models.ManyToManyField(
         Ingredient,
         related_name='recipes',
@@ -84,15 +82,16 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag,
         related_name='recipes_with_tag',
-        through='TagRecipe', verbose_name='Теги'
+        through='TagRecipe',
+        verbose_name='Теги'
     )
     cooking_time = models.IntegerField(verbose_name='Время приготовления',
                                        validators=[MinValueValidator(
                                            1, 'Время приготовления не должно быть меньше 1 минуты'
-                                           )])
+                                       )])
     is_favorited = models.BooleanField(default=False,
                                        verbose_name='В избранном')
-    is_in_shopping_card = models.BooleanField(default=False,
+    is_in_shopping_cart = models.BooleanField(default=False,
                                               verbose_name='В списке покупок')
 
     class Meta:
@@ -128,12 +127,12 @@ class IngredientRecipe(models.Model):
                           'Количество ингредиентов не может быть меньше 0.1')])
 
 
-class Favorites(models.Model):
+class Favorite(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.SET_NULL,
         null=True, verbose_name='Пользователь'
     )
-    recipes = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipe, on_delete=models.SET_NULL,
         related_name='favorite_recipe',
         null=True, verbose_name='Рецепт'
@@ -151,16 +150,17 @@ class Favorites(models.Model):
         verbose_name_plural = 'Избранное'
 
     def __str__(self):
-        return self.user.username
+        return (f'{self.user.username} добавил'
+                f'{self.recipe.name} в избранное')
 
 
-class ShoppingCard(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE,
         related_name='carts',
         verbose_name='Пользователь'
     )
-    recipes = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
         related_name='carts',
         verbose_name='Рецепт'

@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ych$j8&si8@gy8m(&*ov)&@p*&mv33-9lf=a8a&m)z90&m-hth'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['158.160.6.13', '127.0.0.1', 'localhost', 'bertysfoodgram.hopto.org']
 
@@ -74,8 +74,6 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        # Меняем настройку Django: теперь для работы будет использоваться
-        # бэкенд postgresql
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('POSTGRES_DB', 'django'),
         'USER': os.getenv('POSTGRES_USER', 'django'),
@@ -156,12 +154,15 @@ DJOSER = {
         'current_user': 'recipes.serializers.CustomUserSerializer',
         'user_create': 'recipes.serializers.CustomUserSerializer',
         'token_create': 'recipes.serializers.GetTokenSerializer',
+
     },
 
     'PERMISSIONS': {
-        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
+        'user': ['rest_framework.permissions.AllowAny'],
         'user_list': ['rest_framework.permissions.AllowAny'],
+        'token_create': ['rest_framework.permissions.AllowAny'],
     },
 
+    'HIDE_USERS': False,
 
 }
