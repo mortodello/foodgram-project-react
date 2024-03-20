@@ -183,8 +183,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         super().update(instance, validated_data)
         ingredient_list = []
         for ingredient in ingredients:
-            current_ingredient = get_object_or_404(Ingredient,
-                                                   name=ingredient.get('ingredient'))
+            current_ingredient = get_object_or_404(
+                Ingredient,
+                name=ingredient.get('ingredient')
+            )
             amount = ingredient.get('amount')
             ingredient_list.append(IngredientRecipe(
                 recipe=instance,
@@ -197,7 +199,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         full_representation = super().to_representation(instance)
-        full_representation['tags'] = TagSerializer(instance.tags, many=True).data
+        full_representation['tags'] = TagSerializer(
+            instance.tags, many=True).data
         short_representation = super().to_representation(instance)
         short_representation.pop('tags')
         short_representation.pop('author')

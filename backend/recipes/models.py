@@ -30,7 +30,8 @@ class Subscriptions(models.Model):
         verbose_name_plural = 'подписки'
 
     def __str__(self):
-        return f'{self.follower.username} подписан на {self.following.username}'
+        return (f'{self.follower.username}'
+                'подписан на {self.following.username}')
 
 
 class Ingredient(models.Model):
@@ -85,10 +86,11 @@ class Recipe(models.Model):
         through='TagRecipe',
         verbose_name='Теги'
     )
-    cooking_time = models.IntegerField(verbose_name='Время приготовления',
-                                       validators=[MinValueValidator(
-                                           1, 'Время приготовления не должно быть меньше 1 минуты'
-                                       )])
+    cooking_time = models.IntegerField(
+        verbose_name='Время приготовления',
+        validators=[MinValueValidator(
+            1,
+            'Время приготовления не должно быть меньше 1 минуты')])
     is_favorited = models.BooleanField(default=False,
                                        verbose_name='В избранном')
     is_in_shopping_cart = models.BooleanField(default=False,

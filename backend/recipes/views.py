@@ -8,7 +8,6 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
 from users.models import CustomUser
 
 from .filters import IngredientFilter, RecipeFilter
@@ -37,9 +36,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=['get', 'post', 'delete'], permission_classes=[IsAuthenticated, ])
+    @action(detail=True, methods=['get', 'post', 'delete'],
+            permission_classes=[IsAuthenticated, ])
     def favorite(self, request, pk):
-        Favorite.objects.create(user=self.request.user, recipes=get_object_or_404(Recipe, id=pk))
+        Favorite.objects.create(user=self.request.user,
+                                recipes=get_object_or_404(Recipe, id=pk))
         serializer = RecipeSerializer(Recipe.objects.get(id=pk),
                                       context={'request': request})
         return Response(serializer.data)
@@ -90,7 +91,7 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
     pagination_class = LimitOffsetPagination
     http_method_names = ['get', 'post', 'patch']
-    permission_classes = (AllowAny,)
+    permission_classes = (AllowAny, )
 
     @action(detail=False, methods=['get',],
             permission_classes=(IsAuthenticated,),
@@ -109,15 +110,18 @@ class CustomUserViewSet(UserViewSet):
             permission_classes=(IsAuthenticated,),
             )
     def subscribe(self, request, id):
-        Subscriptions.objects.create(follower=self.request.user, following=User.objects.get(pk=id))
+        Subscriptions.objects.create(follower=self.request.user,
+                                     following=User.objects.get(pk=id))
         serializer = SubscriptionsSerializer(User.objects.get(pk=id),
                                              context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['get',], permission_classes=(IsAuthenticated,))
+    @action(detail=False, methods=['get',],
+            permission_classes=(IsAuthenticated,))
     def me(self, request):
-        serializer = CustomUserSerializer(get_object_or_404(CustomUser, username=request.user),
-                                          context={'request': request})
+        serializer = CustomUserSerializer(
+            get_object_or_404(CustomUser, username=request.user),
+            context={'request': request})
         return Response(serializer.data)
 
 
