@@ -7,7 +7,7 @@ def unique_ingredient(value):
         element = value.pop()
         for v2 in value:
             if element == v2:
-                raise ValidationError('Такой ингредиент уже есть!')
+                raise ValidationError(f'Ингредиент {element} уже есть!')
     return income_value
 
 
@@ -17,14 +17,5 @@ def unique_tag(value):
         element = value.pop()
         for v2 in value:
             if element == v2:
-                raise ValidationError('Такой тег уже есть!')
+                raise ValidationError(f'Тег {element} уже есть!')
     return income_value
-
-
-def tag_igredient_not_empty(value):
-    print(value)
-    if 'tags' not in value:
-        raise ValidationError('Поле тег отсутствует!')
-    if 'ingredients_used' not in value:
-        raise ValidationError('Поле ингредиент отсутствует!')
-    return value

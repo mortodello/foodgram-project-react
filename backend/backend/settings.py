@@ -1,24 +1,17 @@
 import os
-# from datetime import timedelta
+
+from dotenv import load_dotenv
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
+DEBUG = os.getenv('DEBUG_PROD') == 'True'
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ych$j8&si8@gy8m(&*ov)&@p*&mv33-9lf=a8a&m)z90&m-hth'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-ALLOWED_HOSTS = ['158.160.6.13', '127.0.0.1', 'localhost', 'bertysfoodgram.hopto.org']
-
-
-# Application definition
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(', ')
 
 INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
@@ -84,9 +77,6 @@ DATABASES = {
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -102,10 +92,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/3.2/topics/i18n/
-
 LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
@@ -116,20 +102,13 @@ USE_L10N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.2/howto/static-files/
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-AUTH_USER_MODEL = 'users.CustomUser'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+AUTH_USER_MODEL = 'users.FoodgramUser'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -150,9 +129,9 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'SERIALIZERS': {
-        'user': 'recipes.serializers.CustomUserSerializer',
-        'current_user': 'recipes.serializers.CustomUserSerializer',
-        'user_create': 'recipes.serializers.CustomUserSerializer',
+        'user': 'recipes.serializers.FoodgramUserSerializer',
+        'current_user': 'recipes.serializers.FoodgramUserSerializer',
+        'user_create': 'recipes.serializers.FoodgramUserSerializer',
         'token_create': 'recipes.serializers.GetTokenSerializer',
 
     },

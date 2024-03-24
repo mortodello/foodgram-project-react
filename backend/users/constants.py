@@ -1,0 +1,14 @@
+USER = 'user'
+MODERATOR = 'moderator'
+ADMIN = 'admin'
+ROLES = (
+    (USER, 'Пользователь'),
+    (MODERATOR, 'Модератор'),
+    (ADMIN, 'Администратор'),
+)
+USERNAME_MAX_LENGTH = 150
+FIRST_NAME_MAX_LENGTH = 150
+LAST_NAME_MAX_LENGTH = 150
+EMAIL_MAX_LENGTH = 254
+PASSWORD_MAX_LENGTH = 150
+ROLE_MAX_LEN = 100

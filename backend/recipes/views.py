@@ -8,15 +8,16 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from users.models import CustomUser
 
 from .filters import IngredientFilter, RecipeFilter
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                     ShoppingCart, Subscriptions, Tag)
+                     ShoppingCart, Tag)
 from .permissions import IsAdminAuthorOrReadOnly
-from .serializers import (CustomUserSerializer, IngredientSerializer,
-                          RecipeSerializer, SubscriptionsSerializer,
-                          TagSerializer)
+from .serializers import (FavoriteSerializer, FoodgramUserSerializer,
+                          IngredientSerializer, RecipeSerializer,
+                          ShoppigCartSerializer, SubscriptionsPostSerializer,
+                          SubscriptionsSerializer, TagSerializer)
+from users.models import Subscriptions
 
 User = get_user_model()
 
@@ -36,35 +37,51 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=True, methods=['get', 'post', 'delete'],
+    @action(detail=True, methods=['post', ],
             permission_classes=[IsAuthenticated, ])
     def favorite(self, request, pk):
-        Favorite.objects.create(user=self.request.user,
-                                recipes=get_object_or_404(Recipe, id=pk))
-        serializer = RecipeSerializer(Recipe.objects.get(id=pk),
-                                      context={'request': request})
-        return Response(serializer.data)
+        serializer = FavoriteSerializer(
+            data={'user': request.user.id, 'recipe': pk},
+            context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        serializer_recipe = RecipeSerializer(Recipe.objects.get(id=pk),
+                                             context={'request': request})
+        return Response(serializer_recipe.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=['post', 'delete'],
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
+        if not Favorite.objects.filter(user__id=request.user.id,
+                                       recipe=recipe).exists():
+            return Response({'errors': 'Такого рецепта нет в избранном!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Favorite.objects.filter(user__id=request.user.id,
+                                recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post', ],
             permission_classes=[IsAuthenticated, ])
     def shopping_cart(self, request, pk):
+        serializer = ShoppigCartSerializer(
+            data={'user': request.user.id, 'recipe': pk},
+            context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        serializer_recipe = RecipeSerializer(Recipe.objects.get(id=pk),
+                                             context={'request': request})
+        return Response(serializer_recipe.data, status=status.HTTP_201_CREATED)
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
-        if request.method == 'POST':
-            serializer = RecipeSerializer(
-                data={'user': request.user.id, 'recipe': recipe.id, },
-                context={'request': request})
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            error_message = 'У вас нет этого рецепта в списке покупок'
-            if not ShoppingCart.objects.filter(user=request.user,
-                                               recipe=recipe).exists():
-                return Response({'errors': error_message},
-                                status=status.HTTP_400_BAD_REQUEST)
-            ShoppingCart.objects.filter(user=request.user,
-                                        recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        if not Favorite.objects.filter(user__id=request.user.id,
+                                       recipe=recipe).exists():
+            return Response({'errors': 'Такого рецепта нет в списке покупок!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        ShoppingCart.objects.filter(user__id=request.user.id,
+                                    recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated, ])
@@ -73,6 +90,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe__carts__user=request.user
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
+        ).order_by(
+            'ingredient__name'
         ).annotate(ingredient_amount=Sum('amount'))
         shopping_list = ['Список покупок:\n']
         for ingredient in ingredients:
@@ -86,41 +105,77 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return response
 
 
-class CustomUserViewSet(UserViewSet):
+class FoodgramUserViewSet(UserViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = FoodgramUserSerializer
     pagination_class = LimitOffsetPagination
-    http_method_names = ['get', 'post', 'patch']
+    http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (AllowAny, )
 
     @action(detail=False, methods=['get', ],
-            permission_classes=(IsAuthenticated,),
-            pagination_class=LimitOffsetPagination
+            permission_classes=(IsAuthenticated,)
             )
     def subscriptions(self, request):
-        user = User.objects.get(username=self.request.user)
-        users = user.followers.all()
+        # print(User.objects.annotate(following__follower=request.user,
+        # recipes__in=Recipe.objects.all()[1:3]))
+        page = self.paginate_queryset(User.objects.filter(
+            following__follower=request.user))
         serializer = SubscriptionsSerializer(
-            [User.objects.get(pk=user.following.id) for user in users],
+            page,
             context={'request': request},
             many=True)
-        return Response(serializer.data)
 
-    @action(detail=True, methods=['get', 'post', 'delete'],
+        if 'recipes_limit' in request.query_params:
+            limit = int(request.query_params['recipes_limit']) + 1
+            for data in serializer.data:
+                print(type(data))
+                user = User.objects.get(username=data['username'])
+                recipes = user.recipes.all().order_by('-id')[1:limit]
+                serializer2 = RecipeSerializer(recipes,
+                                               context={'request': request},
+                                               many=True)
+                data['recipes'] = serializer2.data
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=True, methods=['post',],
             permission_classes=(IsAuthenticated,),
             )
     def subscribe(self, request, id):
-        Subscriptions.objects.create(follower=self.request.user,
-                                     following=User.objects.get(pk=id))
-        serializer = SubscriptionsSerializer(User.objects.get(pk=id),
-                                             context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        user = get_object_or_404(User, pk=id)
+        serializer_subspript = SubscriptionsPostSerializer(
+            data={'follower': request.user.id, 'following': id},
+            context={'request': request})
+        serializer_subspript.is_valid(raise_exception=True)
+        serializer_subspript.save()
+        serializer_user = SubscriptionsSerializer(user,
+                                                  context={'request': request})
+        if 'recipes_limit' in request.query_params:
+            limit = int(request.query_params['recipes_limit']) + 1
+            recipes = user.recipes.all().order_by('-id')[1:limit]
+            serializer_recipe = RecipeSerializer(recipes,
+                                                 context={'request': request},
+                                                 many=True)
+            serializer_user.data['recipes'].clear()
+            serializer_user.data['recipes'].extend(
+                list(serializer_recipe.data))
+        return Response(serializer_user.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id):
+        author = get_object_or_404(User, id=id)
+        if not Subscriptions.objects.filter(follower__id=request.user.id,
+                                            following=author).exists():
+            return Response({'errors': 'Вы не подписаны на этого автора!'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Subscriptions.objects.filter(follower__id=request.user.id,
+                                     following=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get', ],
             permission_classes=(IsAuthenticated,))
     def me(self, request):
-        serializer = CustomUserSerializer(
-            get_object_or_404(CustomUser, username=request.user),
+        serializer = FoodgramUserSerializer(
+            get_object_or_404(User, username=request.user),
             context={'request': request})
         return Response(serializer.data)
 

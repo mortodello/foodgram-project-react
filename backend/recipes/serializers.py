@@ -1,17 +1,17 @@
 import base64
-
 import webcolors
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from djoser.serializers import TokenCreateSerializer, UserSerializer
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                     ShoppingCart, Subscriptions, Tag, TagRecipe)
-from .validators import tag_igredient_not_empty, unique_ingredient, unique_tag
+                     ShoppingCart, Tag, TagRecipe)
+from .validators import unique_ingredient, unique_tag
+from users.models import Subscriptions
 
 User = get_user_model()
 
@@ -39,7 +39,7 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class CustomUserSerializer(UserSerializer):
+class FoodgramUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,7 +65,6 @@ class CustomUserSerializer(UserSerializer):
         return representation
 
     def create(self, validated_data):
-        print('Serial create')
         password = make_password(validated_data.pop('password'))
         validated_data['password'] = password
         return super().create(validated_data)
@@ -109,8 +108,9 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    author = CustomUserSerializer(read_only=True)
+    author = FoodgramUserSerializer(read_only=True)
     tags = serializers.SlugRelatedField(queryset=Tag.objects.all(),
+                                        required=True,
                                         slug_field='id',
                                         many=True)
     ingredients = IngredientRecipeSerializer(many=True,
@@ -130,18 +130,21 @@ class RecipeSerializer(serializers.ModelSerializer):
                             'is_in_shopping_cart')
 
     def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        return (request and request.user.is_authenticated
-                and Favorite.objects.filter(
-                    user=self.context['request'].user, recipe=obj
-                ).exists())
+        return Favorite.objects.filter(
+            user__id=self.context['request'].user.id,
+            recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        return (request and request.user.is_authenticated
-                and ShoppingCart.objects.filter(
-                    user=request.user, recipe=obj
-                ).exists())
+        return ShoppingCart.objects.filter(
+            user__id=self.context['request'].user.id,
+            recipe=obj).exists()
+
+    def validate(self, data):
+        if 'tags' not in data:
+            raise serializers.ValidationError('Поле тег отсутствует!')
+        if 'ingredients_used' not in data:
+            raise serializers.ValidationError('Поле ингредиент отсутствует!')
+        return data
 
     def validate_tags(self, value):
         if not value:
@@ -173,8 +176,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        print('hello from seri')
-        tag_igredient_not_empty(validated_data)
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
         instance.tags.clear()
@@ -225,13 +226,54 @@ class SubscriptionsSerializer(UserSerializer):
         model = User
         fields = ('email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed', 'recipes', 'recipes_count')
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscriptions.objects.all(),
-                fields=('follower', 'following'),
-                message='Вы уже подписаны на этого пользователя'
-            )
-        ]
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+
+
+class SubscriptionsPostSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subscriptions
+        fields = ('follower', 'following')
+
+    def validate(self, data):
+        if data['follower'] == data['following']:
+            raise serializers.ValidationError('Нельзя подписаться на себя!')
+        if Subscriptions.objects.filter(
+            follower=data['follower'].id,
+            following=data['following'].id
+        ).exists():
+            raise serializers.ValidationError('Вы уже подписаны!')
+        return data
+
+
+class ShoppigCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+
+    def validate(self, data):
+        if not Recipe.objects.filter(id=data['recipe'].id).exists():
+            raise serializers.ValidationError('Такой рецепт не существует!')
+        if ShoppingCart.objects.filter(
+            user=data['user'].id, recipe=data['recipe'].id
+        ).exists():
+            raise serializers.ValidationError('Этот рецепт уже в покупках!')
+        return data
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+    def validate(self, data):
+        if not Recipe.objects.filter(id=data['recipe'].id).exists():
+            raise serializers.ValidationError('Такой рецепт не существует!')
+        if Favorite.objects.filter(user=data['user'].id,
+                                   recipe=data['recipe'].id).exists():
+            raise serializers.ValidationError('Этот рецепт уже в избранном!')
+        return data

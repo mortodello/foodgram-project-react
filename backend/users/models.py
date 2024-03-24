@@ -1,25 +1,15 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
-from .managers import CustomUserManager
+from .constants import (EMAIL_MAX_LENGTH, FIRST_NAME_MAX_LENGTH,
+                        LAST_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH,
+                        ROLE_MAX_LEN, ROLES, USER, USERNAME_MAX_LENGTH)
+from .managers import FoodgramManager
 from .validators import validate_username
 
-USER = 'user'
-MODERATOR = 'moderator'
-ADMIN = 'admin'
-ROLES = (
-    (USER, 'Пользователь'),
-    (MODERATOR, 'Модератор'),
-    (ADMIN, 'Администратор'),
-)
-USERNAME_MAX_LENGTH = 150
-FIRST_NAME_MAX_LENGTH = 150
-LAST_NAME_MAX_LENGTH = 150
-EMAIL_MAX_LENGTH = 254
-PASSWORD_MAX_LENGTH = 150
 
-
-class CustomUser(AbstractBaseUser, PermissionsMixin):
+class FoodgramUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=USERNAME_MAX_LENGTH, unique=True,
                                 validators=[validate_username, ],
                                 verbose_name='Имя пользователя')
@@ -36,7 +26,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True,
                                        verbose_name='Дата регистрации')
     role = models.CharField(
-        max_length=max([len(x) for (x, _) in ROLES]),
+        max_length=ROLE_MAX_LEN,
         choices=ROLES,
         default=USER,
         verbose_name='Роль'
@@ -47,9 +37,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', ]
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
-    objects = CustomUserManager()
+    objects = FoodgramManager()
 
     class Meta:
         ordering = ('date_joined',)
@@ -58,3 +48,29 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+
+User = get_user_model()
+
+
+class Subscriptions(models.Model):
+    follower = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        verbose_name='Пользователь')
+    following = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='following',
+        verbose_name='Подписан на')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['follower', 'following'],
+                name='unique_follower_following'
+            )
+        ]
+        verbose_name = 'Подписки'
+        verbose_name_plural = 'подписки'
+
+    def __str__(self):
+        return (f'{self.follower.username}'
+                f'подписан на {self.following.username}')
