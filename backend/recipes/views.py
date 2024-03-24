@@ -137,7 +137,7 @@ class FoodgramUserViewSet(UserViewSet):
                 data['recipes'] = serializer2.data
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['post',],
+    @action(detail=True, methods=['post', ],
             permission_classes=(IsAuthenticated,),
             )
     def subscribe(self, request, id):
