@@ -8,6 +8,14 @@ from django.shortcuts import get_object_or_404
 from djoser.serializers import TokenCreateSerializer, UserSerializer
 from rest_framework import serializers
 
+from .constants import (AMOUNT_MIN_VALUE,
+                        AMOUNT_MIN_MESSAGE,
+                        AMOUNT_MAX_VALUE,
+                        AMOUNT_MAX_MESSAGE,
+                        COOKING_MIN_VALUE,
+                        COOKING_MIN_MESSAGE,
+                        COOKING_MAX_VALUE,
+                        COOKING_MAX_MESSAGE)
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCart, Tag, TagRecipe)
 from .validators import unique_ingredient, unique_tag
@@ -106,6 +114,13 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
         read_only_fields = ('name', 'measurement_unit')
 
+    def validate_amount(self, value):
+        if value < AMOUNT_MIN_VALUE:
+            raise serializers.ValidationError(AMOUNT_MIN_MESSAGE)
+        if value > AMOUNT_MAX_VALUE:
+            raise serializers.ValidationError(AMOUNT_MAX_MESSAGE)
+        return value
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = FoodgramUserSerializer(read_only=True)
@@ -161,16 +176,25 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Поле не должно быть пустым!')
         return value
 
+    def validate_cooking_time(self, value):
+        if value < COOKING_MIN_VALUE:
+            raise serializers.ValidationError(COOKING_MIN_MESSAGE)
+        if value > COOKING_MAX_VALUE:
+            raise serializers.ValidationError(COOKING_MAX_MESSAGE)
+        return value
+
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
         instance = Recipe.objects.create(**validated_data)
-        for ingredient in ingredients:
-            IngredientRecipe.objects.create(
-                ingredient=ingredient['ingredient'],
+        IngredientRecipe.objects.bulk_create([
+            IngredientRecipe(
+                ingredient=ingredient.get('ingredient'),
                 recipe=instance,
-                amount=ingredient['amount']
+                amount=ingredient.get('amount')
             )
+            for ingredient in ingredients
+        ])
         for tag in tags:
             TagRecipe.objects.create(tag=tag, recipe=instance)
         return instance
@@ -199,22 +223,19 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
+        path = self.context['request'].path
+        if ('/favorite/' in path or '/subscr' in path or '/shop' in path):
+            short_representation = super().to_representation(instance)
+            short_representation.pop('tags')
+            short_representation.pop('author')
+            short_representation.pop('ingredients')
+            short_representation.pop('is_favorited')
+            short_representation.pop('is_in_shopping_cart')
+            short_representation.pop('text')
+            return short_representation
         full_representation = super().to_representation(instance)
         full_representation['tags'] = TagSerializer(
             instance.tags, many=True).data
-        short_representation = super().to_representation(instance)
-        short_representation.pop('tags')
-        short_representation.pop('author')
-        short_representation.pop('ingredients')
-        short_representation.pop('is_favorited')
-        short_representation.pop('is_in_shopping_cart')
-        short_representation.pop('text')
-        if '/favorite/' in self.context['request'].path:
-            return short_representation
-        if '/subscr' in self.context['request'].path:
-            return short_representation
-        if '/shop' in self.context['request'].path:
-            return short_representation
         return full_representation
 
 

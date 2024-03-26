@@ -116,8 +116,6 @@ class FoodgramUserViewSet(UserViewSet):
             permission_classes=(IsAuthenticated,)
             )
     def subscriptions(self, request):
-        # print(User.objects.annotate(following__follower=request.user,
-        # recipes__in=Recipe.objects.all()[1:3]))
         page = self.paginate_queryset(User.objects.filter(
             following__follower=request.user))
         serializer = SubscriptionsSerializer(

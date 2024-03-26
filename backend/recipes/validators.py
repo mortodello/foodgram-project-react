@@ -2,20 +2,14 @@ from django.core.exceptions import ValidationError
 
 
 def unique_ingredient(value):
-    income_value = value.copy()
-    for v1 in value:
-        element = value.pop()
-        for v2 in value:
-            if element == v2:
-                raise ValidationError(f'Ингредиент {element} уже есть!')
-    return income_value
+    ingredient_list = []
+    [ingredient_list.append(v['ingredient']) for v in value]
+    if len(value) != len(set(ingredient_list)):
+        raise ValidationError('Ингредиенты не должны дублироваться!')
+    return value
 
 
 def unique_tag(value):
-    income_value = value.copy()
-    for v1 in value:
-        element = value.pop()
-        for v2 in value:
-            if element == v2:
-                raise ValidationError(f'Тег {element} уже есть!')
-    return income_value
+    if len(value) != len(set(value)):
+        raise ValidationError('Теги не должны дублироваться!')
+    return value

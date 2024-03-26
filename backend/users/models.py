@@ -4,7 +4,8 @@ from django.db import models
 
 from .constants import (EMAIL_MAX_LENGTH, FIRST_NAME_MAX_LENGTH,
                         LAST_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH,
-                        ROLE_MAX_LEN, ROLES, USER, USERNAME_MAX_LENGTH)
+                        ROLE_MAX_LEN, ROLES, USER, ADMIN, MODERATOR,
+                        USERNAME_MAX_LENGTH)
 from .managers import FoodgramManager
 from .validators import validate_username
 
@@ -49,16 +50,25 @@ class FoodgramUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.username
 
+    @property
+    def is_admin(self):
+        if self.role == ADMIN:
+            return True
+        return False
 
-User = get_user_model()
+    @property
+    def is_moderator(self):
+        if self.role == MODERATOR:
+            return True
+        return False
 
 
 class Subscriptions(models.Model):
     follower = models.ForeignKey(
-        User, on_delete=models.CASCADE,
+        FoodgramUser, on_delete=models.CASCADE,
         verbose_name='Пользователь')
     following = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='following',
+        FoodgramUser, on_delete=models.CASCADE, related_name='following',
         verbose_name='Подписан на')
 
     class Meta:
