@@ -71,7 +71,6 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag,
         related_name='recipes_with_tag',
-        through='TagRecipe',
         verbose_name='Теги'
     )
     cooking_time = models.PositiveSmallIntegerField(
@@ -94,15 +93,6 @@ class Recipe(models.Model):
         return self.name
 
 
-class TagRecipe(models.Model):
-    tag = models.ForeignKey(
-        Tag, on_delete=models.CASCADE
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE
-    )
-
-
 class IngredientRecipe(models.Model):
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
@@ -117,18 +107,18 @@ class IngredientRecipe(models.Model):
     ])
 
 
-class Favorite(models.Model):
+class BaseFavoriteShopping(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE,
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE,
-        related_name='favorite_recipe',
         verbose_name='Рецепт'
     )
 
     class Meta:
+        abstract = True
         ordering = ['id']
         constraints = [
             models.UniqueConstraint(
@@ -136,6 +126,12 @@ class Favorite(models.Model):
                 name='unique_user_recipe_favorite'
             )
         ]
+
+
+class Favorite(BaseFavoriteShopping):
+
+    class Meta:
+        default_related_name = 'favorite_recipe'
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
@@ -144,26 +140,10 @@ class Favorite(models.Model):
                 f'{self.recipe.name} в избранное')
 
 
-class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='carts',
-        verbose_name='Пользователь'
-    )
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE,
-        related_name='carts',
-        verbose_name='Рецепт'
-    )
+class ShoppingCart(BaseFavoriteShopping):
 
     class Meta:
-        ordering = ['id']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='unique_user_recipe_cart'
-            )
-        ]
+        default_related_name = 'carts'
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 

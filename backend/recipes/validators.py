@@ -2,9 +2,7 @@ from django.core.exceptions import ValidationError
 
 
 def unique_ingredient(value):
-    ingredient_list = []
-    [ingredient_list.append(v['ingredient']) for v in value]
-    if len(value) != len(set(ingredient_list)):
+    if len(value) != len(set([v['ingredient'] for v in value])):
         raise ValidationError('Ингредиенты не должны дублироваться!')
     return value
 

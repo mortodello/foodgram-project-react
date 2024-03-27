@@ -2,22 +2,24 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.shortcuts import HttpResponse, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from djoser.views import UserViewSet
+
+from users.models import Subscriptions
+
 from .filters import IngredientFilter, RecipeFilter
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCart, Tag)
-from .permissions import IsAdminAuthorOrReadOnly
+from .permissions import IsAdminAuthorModeratorOrReadOnly
 from .serializers import (FavoriteSerializer, FoodgramUserSerializer,
                           IngredientSerializer, RecipeSerializer,
                           ShoppigCartSerializer, SubscriptionsPostSerializer,
                           SubscriptionsSerializer, TagSerializer)
-from users.models import Subscriptions
 
 User = get_user_model()
 
@@ -26,7 +28,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminAuthorOrReadOnly, )
+    permission_classes = (IsAdminAuthorModeratorOrReadOnly, )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
@@ -52,12 +54,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
-        if not Favorite.objects.filter(user__id=request.user.id,
-                                       recipe=recipe).exists():
+        instance = Favorite.objects.filter(user__id=request.user.id,
+                                           recipe=recipe)
+        if not instance:
             return Response({'errors': 'Такого рецепта нет в избранном!'},
                             status=status.HTTP_400_BAD_REQUEST)
-        Favorite.objects.filter(user__id=request.user.id,
-                                recipe=recipe).delete()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post', ],
@@ -75,12 +77,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
-        if not Favorite.objects.filter(user__id=request.user.id,
-                                       recipe=recipe).exists():
+        instance = ShoppingCart.objects.filter(user__id=request.user.id,
+                                               recipe=recipe)
+        if not instance:
             return Response({'errors': 'Такого рецепта нет в списке покупок!'},
                             status=status.HTTP_400_BAD_REQUEST)
-        ShoppingCart.objects.filter(user__id=request.user.id,
-                                    recipe=recipe).delete()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
@@ -126,7 +128,6 @@ class FoodgramUserViewSet(UserViewSet):
         if 'recipes_limit' in request.query_params:
             limit = int(request.query_params['recipes_limit']) + 1
             for data in serializer.data:
-                print(type(data))
                 user = User.objects.get(username=data['username'])
                 recipes = user.recipes.all().order_by('-id')[1:limit]
                 serializer2 = RecipeSerializer(recipes,
@@ -161,12 +162,12 @@ class FoodgramUserViewSet(UserViewSet):
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id):
         author = get_object_or_404(User, id=id)
-        if not Subscriptions.objects.filter(follower__id=request.user.id,
-                                            following=author).exists():
+        instance = Subscriptions.objects.filter(follower__id=request.user.id,
+                                                following=author)
+        if not instance:
             return Response({'errors': 'Вы не подписаны на этого автора!'},
                             status=status.HTTP_400_BAD_REQUEST)
-        Subscriptions.objects.filter(follower__id=request.user.id,
-                                     following=author).delete()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get', ],

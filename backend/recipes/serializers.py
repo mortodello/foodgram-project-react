@@ -1,12 +1,15 @@
 import base64
-import webcolors
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.shortcuts import get_object_or_404
-from djoser.serializers import TokenCreateSerializer, UserSerializer
 from rest_framework import serializers
+
+import webcolors
+from djoser.serializers import TokenCreateSerializer, UserSerializer
+
+from users.models import Subscriptions
 
 from .constants import (AMOUNT_MIN_VALUE,
                         AMOUNT_MIN_MESSAGE,
@@ -17,9 +20,8 @@ from .constants import (AMOUNT_MIN_VALUE,
                         COOKING_MAX_VALUE,
                         COOKING_MAX_MESSAGE)
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
-                     ShoppingCart, Tag, TagRecipe)
+                     ShoppingCart, Tag)
 from .validators import unique_ingredient, unique_tag
-from users.models import Subscriptions
 
 User = get_user_model()
 
@@ -183,6 +185,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(COOKING_MAX_MESSAGE)
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients_used')
         tags = validated_data.pop('tags')
@@ -195,8 +198,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
             for ingredient in ingredients
         ])
-        for tag in tags:
-            TagRecipe.objects.create(tag=tag, recipe=instance)
+        instance.tags.set(tags)
         return instance
 
     def update(self, instance, validated_data):
@@ -224,7 +226,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         path = self.context['request'].path
-        if ('/favorite/' in path or '/subscr' in path or '/shop' in path):
+        parts_of_path = ['/favorite/', '/subscr', '/shop']
+        if any(parts in path for parts in parts_of_path):
             short_representation = super().to_representation(instance)
             short_representation.pop('tags')
             short_representation.pop('author')

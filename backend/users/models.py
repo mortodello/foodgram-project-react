@@ -51,15 +51,11 @@ class FoodgramUser(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_admin(self):
-        if self.role == ADMIN:
-            return True
-        return False
+        return self.role == ADMIN
 
     @property
     def is_moderator(self):
-        if self.role == MODERATOR:
-            return True
-        return False
+        return self.role == MODERATOR
 
 
 class Subscriptions(models.Model):
