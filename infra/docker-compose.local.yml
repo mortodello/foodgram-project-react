@@ -27,16 +27,14 @@ services:
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
-    depends_on:
-      - backend
 
   nginx:
     build: .
     ports:
       - "8000:80"
     volumes:
-      #- ./nginx.conf:/etc/nginx/conf.d/default.conf
       - media:/media/
       - static:/staticfiles/
     depends_on:
       - frontend
+      - backend
