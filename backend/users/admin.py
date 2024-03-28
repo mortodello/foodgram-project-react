@@ -13,6 +13,14 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 class UserAdminModel(UserAdmin):
+    list_display = (
+        'pk',
+        'username',
+        'email',
+        'first_name',
+        'last_name',
+        'password',
+    )
     readonly_fields = ['last_login', 'date_joined']
     list_filter = ('email', 'username')
 
