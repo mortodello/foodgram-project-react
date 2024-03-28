@@ -12,17 +12,24 @@ services:
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
-  frontend:
-    image: droj/foodgram_frontend
-    command: cp -r /app/build/. /frontend_static/
-    volumes:
-      - static:/frontend_static
+
   backend:
     image: droj/foodgram_backend
     env_file: .env
     volumes:
       - media:/app/media/
       - static:/backend_static
+    depends_on:
+      - db
+
+  frontend:
+    image: droj/foodgram_frontend
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static:/frontend_static
+    depends_on:
+      - backend
+
   nginx:
     image: droj/foodgram_gateway
     ports:
@@ -30,3 +37,5 @@ services:
     volumes:
       - media:/media/
       - static:/staticfiles/
+    depends_on:
+      - frontend
