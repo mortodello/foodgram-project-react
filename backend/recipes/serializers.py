@@ -1,4 +1,6 @@
 import base64
+
+import webcolors
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
@@ -6,8 +8,6 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from djoser.serializers import TokenCreateSerializer, UserSerializer
 from rest_framework import serializers
-
-import webcolors
 
 from users.models import Subscriptions
 
