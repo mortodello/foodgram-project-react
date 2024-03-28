@@ -11,8 +11,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG_PROD') == 'True'
 
-ALLOWED_HOSTS = ['158.160.6.13', '127.0.0.1', 'localhost', 'bertysfoodgram.hopto.org']
-# os.getenv('ALLOWED_HOSTS').split(', ')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(', ')
 
 INSTALLED_APPS = [
     'recipes.apps.RecipesConfig',
