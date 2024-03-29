@@ -31,8 +31,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if 'limit' in self.request.query_params:
-            limit = int(self.request.query_params['limit']) + 1
-            return Recipe.objects.all().order_by('-id')[1:limit]
+            limit = int(self.request.query_params['limit'])
+            return Recipe.objects.all().order_by('-id')[0:limit]
         return Recipe.objects.all()
 
     def perform_create(self, serializer):
