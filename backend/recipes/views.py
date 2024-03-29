@@ -23,12 +23,17 @@ User = get_user_model()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = (IsAdminAuthorModeratorAnonimorOrReadOnly, )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_queryset(self):
+        if 'limit' in self.request.query_params:
+            limit = int(self.request.query_params['limit']) + 1
+            return Recipe.objects.all().order_by('-id')[1:limit]
+        return Recipe.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
