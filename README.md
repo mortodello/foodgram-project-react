@@ -1,5 +1,16 @@
 # Проект Foodgram
 
+[![Main Foodgram workflow](https://github.com/mortodello/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg?branch=master)](https://github.com/mortodello/foodgram-project-react/actions/workflows/foodgram_workflow.yml)
+
+## Ссылка на проект
+[Foodgram](https://bertysfoodgram.hopto.org)
+
+## Администратор проекта
+
+- email: sixhouse666@yandex.ru
+- username: Dagot_Ur
+- password: slo390WU
+
 ## Описание
 Проект "Foodgram" – это "продуктовый помощник". На этом сервисе авторизированные пользователи могут публиковать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать сводный список продуктов, необходимых для приготовления одного или нескольких выбранных блюд. Для неавторизированных пользователей доступны просмотр рецептов и страниц авторов.
 
