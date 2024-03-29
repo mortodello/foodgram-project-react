@@ -1,3 +1,4 @@
+from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -38,8 +39,8 @@ class Ingredient(models.Model):
 class Tag(models.Model):
     name = models.CharField(max_length=TAG_NAME_MAX_LENGTH, unique=True,
                             verbose_name='Название')
-    color = models.CharField(max_length=TAG_COLOR_MAX_LENGTH,
-                             unique=True, verbose_name='Цвет')
+    color = ColorField(max_length=TAG_COLOR_MAX_LENGTH,
+                       unique=True, verbose_name='Цвет')
     slug = models.SlugField(max_length=TAG_SLUG_MAX_LENGTH, unique=True,
                             verbose_name='Слаг')
 
