@@ -14,7 +14,7 @@ from users.models import Subscriptions
 from .filters import IngredientFilter, RecipeFilter
 from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                      ShoppingCart, Tag)
-from .permissions import IsAdminAuthorModeratorOrReadOnly
+from .permissions import IsAdminAuthorModeratorAnonimorOrReadOnly
 from .serializers import (FavoriteSerializer, FoodgramUserSerializer,
                           IngredientSerializer, RecipeSerializer,
                           ShoppigCartSerializer, SubscriptionsPostSerializer,
@@ -26,8 +26,7 @@ User = get_user_model()
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminAuthorModeratorOrReadOnly, )
+    permission_classes = (IsAdminAuthorModeratorAnonimorOrReadOnly, )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     http_method_names = ['get', 'post', 'patch', 'delete']
@@ -109,7 +108,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class FoodgramUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = FoodgramUserSerializer
-    pagination_class = LimitOffsetPagination
     http_method_names = ['get', 'post', 'patch', 'delete']
     permission_classes = (AllowAny, )
 
@@ -129,10 +127,13 @@ class FoodgramUserViewSet(UserViewSet):
             for data in serializer.data:
                 user = User.objects.get(username=data['username'])
                 recipes = user.recipes.all().order_by('-id')[1:limit]
-                serializer2 = RecipeSerializer(recipes,
-                                               context={'request': request},
-                                               many=True)
-                data['recipes'] = serializer2.data
+                if recipes.count() > 1:
+                    serializer2 = RecipeSerializer(
+                        recipes,
+                        context={'request': request},
+                        many=True
+                    )
+                    data['recipes'] = serializer2.data
         return self.get_paginated_response(serializer.data)
 
     @action(detail=True, methods=['post', ],
