@@ -126,7 +126,10 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     author = FoodgramUserSerializer(read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
+    tags = serializers.SlugRelatedField(queryset=Tag.objects.all(),
+                                        required=True,
+                                        slug_field='id',
+                                        many=True)
     ingredients = IngredientRecipeSerializer(many=True,
                                              source='ingredients_used')
     image = Base64ImageField(required=True)
